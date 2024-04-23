@@ -56,34 +56,48 @@
     class Inventory
     {
         int command;
+        bool isFrist = true;
         //소지 중인 아이템을 저장할 List
         List<Item> items;
+        List<Item> newItems = new List<Item>();
         public Inventory(List<Item> items)
         {
             this.items = items;
+            
         }
+        
         void showInventoryList(bool isSetting)
         {
             Console.WriteLine("보유 중인 아이템을 관리할 수 있습니다.\n");
 
             Program.showColorYellow("[ 아이템 목록 ]");
 
-            if (items.Count == 0) Console.WriteLine("암것도 없다"); //이게 출력이 되네요
-
             int idx = 1;
-            foreach (Item item in items)
+            //딱 한 번만 실행!
+            if (isFrist)
             {
-                if (item.getIsSoldOut()) 
+                foreach (Item item in items)
                 {
-                    //장착 페이지로 넘어가면 목록 앞에 숫자 출력
-                    if (isSetting)
+                    if (item.getIsSoldOut())
                     {
-                        item.showList((idx++).ToString());
+                        newItems.Add(item); //새로운 리스트 Item 리스트 변수에 구매한 아이템을 할당
+                                            //장착 페이지로 넘어가면 목록 앞에 숫자 출력
                     }
-                    else
-                        item.showList("-");
                 }
-                    
+                isFrist= false;
+            }
+
+            //if (newItems.Count == 0) Console.WriteLine("암것도 없다"); //이게 출력이 되네요
+            //Console.WriteLine("암것도 없다 " + newItems.Count); //이게 출력이 되네요
+
+            foreach (Item item in newItems)
+            {
+                if (isSetting)
+                {
+                    item.showList((idx++).ToString(), true);
+                }
+                else
+                    item.showList("-", true);
             }
             
         }
@@ -116,6 +130,7 @@
             {
                 Console.Clear();
                 Program.showColorRed("< 인벤토리 - 장착 관리 >\n");
+
                 showInventoryList(true);
 
                 Console.WriteLine();
@@ -145,15 +160,15 @@
             Program.showColorYellow("\n[아이템 목록]");
 
             foreach (Item item in items)
-            { 
+            {
                 //구매 페이지로 넘어가면 목록 앞에 숫자 출력
-                if(isBuying)
+                if (isBuying)
                 {
                     int index = items.IndexOf(item);
-                    item.showList( (index + 1).ToString());
+                    item.showList((index + 1).ToString(), false);
                 }
                 else
-                    item.showList("-");
+                    item.showList("-", false);
             }
         }
         //상점의 초기 메뉴
@@ -167,7 +182,6 @@
                 showShoppingList(false);
             
                 Console.WriteLine("\n\n1. 아이템 구매\n0. 나가기\n");
-
             
                 command = Program.getCommand();
                 //입력값이 1이라면 아이템 구매 메소드 호출
@@ -288,7 +302,7 @@
             this.plusAttack = plusAttack; this.plusDefense = plusDefense;
             this.price = price;
         }
-        public void showList(string s)
+        public void showList(string s, bool isFromInven)
         {
             Console.WriteLine();
 
@@ -301,11 +315,16 @@
                 Console.Write($"공격력 +{plusAttack,-9}\t|");
             if (plusDefense != 0)
                 Console.Write($"방어력 +{plusDefense,-9}\t|");
-            Console.Write($"{description,-35}\t|");
+            Console.Write($"{description,-35}\t");
 
-            if (!isSoldOut)
-                Console.Write($"{price,-5}G");
-            else Program.showColorYellow("구매 완료");
+            //인벤토리에서 아이템의 정보를 표시해줄 때에는 구매 정보나 가격 표시 X
+            if (!isFromInven) 
+            {
+                if (!isSoldOut)
+                    Console.Write($"|{price,-5}G");
+                else Program.showColorYellow("|구매 완료");
+            }
+            
 
         }
     }
