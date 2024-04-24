@@ -46,6 +46,8 @@ namespace SpartaDungeon
         public void setGold(int minus)
         {
             this.gold -= minus;
+            if(this.gold <=0)
+                gold = 0;
         }
 
         public void setHP(int hp) { this.hp = hp;}
@@ -683,6 +685,53 @@ namespace SpartaDungeon
             }
         }
     }
+    class Break
+    {
+        int command;
+        Character character;
+        public Break(Character character) {  this.character = character; }
+        public void showBreakInfo()
+        {
+            while (true)
+            {
+                Console.Clear();
+                
+                Program.showColorRed("< 휴식하기 >\n");
+                Program.showColorYellow("500");
+                Console.Write("G를 내면 체력을 회복할 수 있습니다. ");
+                Console.Write("(보유 골드 :");
+                Program.showColorGreen($"{character.Gold} ");
+                Console.WriteLine("G)\n");
+
+                Program.showColorYellow("[현재 체력] - ");
+                Console.WriteLine($"(100/{character.getHP()})\n");
+
+                Program.showColorYellow("1. ");
+                Console.WriteLine("휴식하기");
+                Program.showColorYellow("0. ");
+                Console.WriteLine("나가기");
+
+                command = Program.CheckCommandVaild(0, 1);
+                if (command == 0) return;
+                if (command == 1) takeBreak();
+            }
+        }
+        void takeBreak()
+        {
+            Console.Clear();
+            Program.showColorRed("< 휴식하기 >\n");
+            Console.WriteLine("휴식을 마쳤습니다! 힘이 솟아나는 기분입니다.\n");
+
+            Program.showColorYellow("[탐험 결과]\n");
+            Console.Write($"체력 {character.getHP()} ");
+            Program.showColorYellow("→ ");
+            character.setHP(100);
+            Console.WriteLine($"{character.getHP()}\n");
+
+            command = Program.CheckCommandVaild(0, 0);
+            if (command == 0) return;
+        }
+    }
     internal class Program
     {
         static void Main(string[] args)
@@ -690,11 +739,12 @@ namespace SpartaDungeon
             List<Item> items = new List<Item>();
             setItemList(items);
 
-            Character player = new Character("홍길동", 1, "전사", 10, 20, 100, 11500);
+            Character player = new Character("홍길동", 1, "전사", 10, 5, 100, 11500);
 
             Inventory inventory = new Inventory(items, player);
             Shop shop = new Shop(player, items, inventory);
             Dungeon dungeon = new Dungeon(player);
+            Break takeBreak = new Break(player);
 
             int? command = null;
 
@@ -711,9 +761,8 @@ namespace SpartaDungeon
                 {
                     showColorRed("잘못된 입력입니다.\n");
                 }
-                //Console.Write("원하시는 행동을 입력해주세요(0 → 프로그램 종료).\n>> ");
-                //int command = int.Parse(Console.ReadLine());
-                command = CheckCommandVaild(0, 4);
+                
+                command = CheckCommandVaild(0, 5);
                 
                 if (command == 0)
                 {
@@ -732,6 +781,8 @@ namespace SpartaDungeon
                         break;
                     case 4:
                         dungeon.showDungeonInfo(); break;
+                    case 5:
+                        takeBreak.showBreakInfo(); break;
                     default:
                         break;
                 }
@@ -744,6 +795,7 @@ namespace SpartaDungeon
             Console.WriteLine("2. 인벤토리");
             Console.WriteLine("3. 상점");
             Console.WriteLine("4. 던전 입장");
+            Console.WriteLine("5. 휴식하기");
             Console.WriteLine();
         }
         static void setItemList(List<Item> list)
@@ -758,6 +810,8 @@ namespace SpartaDungeon
             list.Add(new Item("스파르타의 창", "스파르타의 전사들이 사용했다는 전설의 창입니다.", 7, 0, 2000,ItemType.Weapon));
             list.Add(new Item("타노스의 건틀렛", "큰 힘에는 큰 책임이 따릅니다.", 20, -10, 5000, ItemType.Weapon));
         }
+
+        //문자열의 색을 달리 출력하게 해주는 메서드
         public static void showColorRed(string str)
         {
             Console.ForegroundColor = ConsoleColor.Red;
