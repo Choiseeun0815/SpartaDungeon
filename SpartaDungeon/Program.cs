@@ -103,10 +103,10 @@ namespace SpartaDungeon
     class Inventory
     {
         int command;
-        bool isFrist = true;
+        bool isFirst = true;
         //소지 중인 아이템을 저장할 List
         List<Item> items;
-        List<Item> invenItems = new List<Item>();
+        public List<Item> invenItems = new List<Item>();
 
         Character character;
         public Inventory(List<Item> items, Character character)
@@ -114,26 +114,27 @@ namespace SpartaDungeon
             this.items = items;
             this.character = character;
         }
-
-        void showInventoryList(bool isSetting)
+        public void setListUpdate() { isFirst = true; }
+        
+        public void showInventoryList(bool isSetting)
         {
-            Console.WriteLine("보유 중인 아이템을 관리할 수 있습니다.\n");
 
-            Program.showColorYellow("[ 아이템 목록 ]");
+            Program.showColorYellow("[아이템 목록]");
 
             int idx = 1;
-            //딱 한 번만 실행!
-            if (isFrist)
-            {
-                foreach (Item item in items)
-                {
-                    if (item.getIsSoldOut())
-                    {
-                        invenItems.Add(item); //새로운 리스트 Item 리스트 변수에 구매한 아이템을 할당
-                    }
-                }
-                isFrist = false;
-            }
+
+            ////딱 한 번만 실행!
+            //if (isFirst)
+            //{
+            //    foreach (Item item in items)
+            //    {
+            //        if (item.getIsSoldOut())
+            //        {
+            //            invenItems.Add(item); //새로운 리스트 Item 리스트 변수에 구매한 아이템을 할당
+            //        }
+            //    }
+            //    isFirst = false;
+            //}
 
             //if (newItems.Count == 0) Console.WriteLine("암것도 없다"); //이게 출력이 되네요
             //Console.WriteLine("암것도 없다 " + newItems.Count); //이게 출력이 되네요
@@ -157,10 +158,12 @@ namespace SpartaDungeon
                 Console.Clear();
 
                 Program.showColorRed("< 인벤토리 >\n");
+                Console.WriteLine("보유 중인 아이템을 관리할 수 있습니다.\n");
 
                 showInventoryList(false);
 
                 Console.WriteLine("\n\n1. 장착 관리\n0. 나가기\n");
+
                 if (command == (int)CommandValid.InValid)
                 {
                     Program.showColorRed("잘못된 입력입니다.\n"); ;
@@ -183,6 +186,7 @@ namespace SpartaDungeon
             {
                 Console.Clear();
                 Program.showColorRed("< 인벤토리 - 장착 관리 >\n");
+                Console.WriteLine("보유 중인 아이템을 관리할 수 있습니다.\n");
 
                 showInventoryList(true);
 
@@ -221,7 +225,6 @@ namespace SpartaDungeon
                     }
                 }
             }
-
         }
     }
     class Shop
@@ -229,10 +232,13 @@ namespace SpartaDungeon
         int command;
         Character character;
         List<Item> items;
-        public Shop(Character character, List<Item> items)
+        Inventory inventory;
+
+        public Shop(Character character, List<Item> items, Inventory inventory)
         {
             this.character = character;
             this.items = items;
+            this.inventory = inventory;
         }
         void showShoppingList(bool isBuying)
         {
@@ -265,33 +271,36 @@ namespace SpartaDungeon
                 Program.showColorRed("< 상점 >\n");
                 showShoppingList(false);
 
-                Console.WriteLine("\n\n1. 아이템 구매\n0. 나가기\n");
+                Console.WriteLine("\n\n1. 아이템 구매\n2. 아이템 판매\n0. 나가기\n");
 
                 if (command == (int)CommandValid.InValid)
                 {
                     Program.showColorRed("잘못된 입력입니다.\n"); ;
                 }
 
-                command = Program.CheckCommandVaild(0, 1);
+                command = Program.CheckCommandVaild(0, 2);
+
                 //입력값이 1이라면 아이템 구매 메소드 호출
                 if (command == 1)
                 {
                     buyItem();
+                }
+                else if(command == 2)
+                {
+                    sellItem();
                 }
                 //입력값이 0이라면 showShopInfo()를 호출한 곳으로 돌아감(이전 화면으로 돌아감)
                 else if (command == 0)
                     return;
             }
         }
-        //아이템 구매를 위한 기능
-        public void buyItem()
+        //아이템 구매를 위한 메서드
+        void buyItem()
         {
             //입력에 대한 상태를 저장하는 변수
             //state는 0부터 3까지의 값(enum SHOPPING)을 가지며,
             //각 값은 아이템을 구매할 때 발생할 수 있는 상황에 대한 결과를 나타낸다.
             int state = -1;
-            Console.Clear();
-
             while (true)
             {
                 Console.Clear();
@@ -310,14 +319,9 @@ namespace SpartaDungeon
                 {
                     Program.showColorRed("잘못된 입력입니다.\n"); ;
                 }
-                
+
                 command = Program.CheckCommandVaild(0, items.Count);
 
-                //if (command < 0 || command > items.Count)
-                //{
-                //    state = (int)SHOPPING.WrongInput;
-                //    continue;
-                //}
                 if (command == 0) return;
 
                 foreach (Item item in items)
@@ -338,6 +342,7 @@ namespace SpartaDungeon
                                 character.setGold(item.getPrice());
                                 state = (int)SHOPPING.Success;
 
+                                inventory.invenItems.Add(item);
                                 break;
                             }
                             //소지 금액이 가격보다 더 적은 경우, 
@@ -354,6 +359,71 @@ namespace SpartaDungeon
                     }
                 }
             }
+        }
+        //아이템 판매를 위한 메서드
+        void sellItem()
+        {
+            bool sellComplete = false;
+            
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine(inventory.invenItems.Count);
+                Program.showColorRed("< 상점 - 아이템 판매 >\n");
+                Console.WriteLine("필요한 아이템을 얻을 수 있는 상점입니다.\n");
+
+                Program.showColorYellow("[보유 골드]\n");
+                Console.WriteLine($"{character.Gold} G\n");
+
+                inventory.showInventoryList(true);
+
+                Console.WriteLine();
+                Console.WriteLine();
+                if (command == (int)CommandValid.InValid)
+                {
+                    Program.showColorRed("잘못된 입력입니다.\n");
+                }
+
+                if(sellComplete)
+                {
+                    Program.showColorGreen("판매 완료!\n");
+                    sellComplete = false;
+                }
+
+                command = Program.CheckCommandVaild(0, inventory.invenItems.Count);
+                if (command == 0) return;
+
+
+                foreach (Item item in inventory.invenItems)
+                {
+                    if ((command - 1) == inventory.invenItems.IndexOf(item))
+                    {
+                        //선택한 아이템이 구매가 된 상태라면, 
+                        if (item.getIsSoldOut())
+                        {
+                            item.setSoldOut();
+
+                            int refund = (int)Math.Round(item.getPrice() * 0.85);
+                            character.setGold(-1 * refund);
+
+                            if (item.getItemEquip()) 
+                            {
+                                item.setItemEquip();
+
+                                int attack = (-1 * item.getPlusAttack());
+                                int denfense = (-1 * item.getPlusDefense());
+                                character.setItemState(attack, denfense);
+                            }
+
+                            inventory.invenItems.Remove(item);
+                            sellComplete = true;
+                            break;
+                        }
+                    }
+                }
+                
+            }
+            
         }
         public void ShowCurrnetState(ref int state)
         {
@@ -393,7 +463,7 @@ namespace SpartaDungeon
         public int getPrice() { return price; }
 
         public bool getIsSoldOut() { return isSoldOut; }
-        public void setSoldOut() { isSoldOut = true; }
+        public void setSoldOut() { isSoldOut = !isSoldOut; }
 
         public void setItemEquip() { isEquipped = !isEquipped; }
         public bool getItemEquip() { return isEquipped; }
@@ -462,8 +532,8 @@ namespace SpartaDungeon
 
             Character player = new Character("홍길동", 1, "전사", 10, 20, 100, 11500);
 
-            Shop shop = new Shop(player, items);
             Inventory inventory = new Inventory(items, player);
+            Shop shop = new Shop(player, items, inventory);
 
             int? command = null;
 
@@ -561,5 +631,4 @@ namespace SpartaDungeon
             return input;
         }
     }
-    
 }
