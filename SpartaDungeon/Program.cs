@@ -1,7 +1,8 @@
-﻿namespace SpartaDungeon
+﻿
+namespace SpartaDungeon
 {
     public enum SHOPPING
-    { 
+    {
         Success, //구매 성공! → 정수형으로 변환하면 0
         Insufficient, //gold가 부족! → 정수형으로 변환하면 1
         SoldOut, //이미 판매됨! → 정수형으로 변환하면 2
@@ -15,6 +16,8 @@
         //이름, 전직
         string name, job;
 
+        int itemAttack = 0, itemDefense = 0;
+
         public Character(string name, int level, string job,
             int attack, int defense, int hp, int gold)
         {
@@ -26,10 +29,17 @@
             this.hp = hp;
             this.gold = gold;
         }
-        public int Gold { get { return gold; }  }
+        public int Gold { get { return gold; } }
         public void setGold(int minus)
         {
             this.gold -= minus;
+        }
+
+        //장착한 아이템에 대하여 능력치를 적용해주는 함수
+        public void setItemState(int attack, int defense)
+        {
+            this.attack += attack; this.defense += defense;
+            itemAttack += attack; itemDefense += defense;
         }
         public void showCharacterInfo()
         {
@@ -40,10 +50,23 @@
 
             Console.WriteLine("Lv. " + level.ToString("00"));
             Console.WriteLine($"{name} ( {job} )");
-            Console.WriteLine("공격력 : " + attack);
-            Console.WriteLine("방어력 : " + defense);
+            Console.Write("공격력 : " + attack);
+            if (itemAttack != 0) //아이템으로 인해 공격력에 증감이 있다면, 
+            {
+                Console.Write(" ("); Program.showColorYellow("+" + itemAttack); Console.WriteLine(")");
+            }
+            else Console.WriteLine();
+
+            Console.Write("방어력 : " + defense);
+
+            if (itemDefense != 0) //아이템으로 인해 방어력력에 증감이 있다면, 
+            {
+                Console.Write(" ("); Program.showColorYellow("+" + itemDefense); Console.WriteLine(")");
+            }
+            else Console.WriteLine();
+
             Console.WriteLine("체력 : " + hp);
-            Console.WriteLine("Gold : {0} G", gold);
+            Console.WriteLine("Gold : {0}G", gold);
 
             Console.WriteLine();
 
@@ -59,13 +82,15 @@
         bool isFrist = true;
         //소지 중인 아이템을 저장할 List
         List<Item> items;
-        List<Item> newItems = new List<Item>();
-        public Inventory(List<Item> items)
+        List<Item> invenItems = new List<Item>();
+
+        Character character;
+        public Inventory(List<Item> items, Character character)
         {
             this.items = items;
-            
+            this.character = character;
         }
-        
+
         void showInventoryList(bool isSetting)
         {
             Console.WriteLine("보유 중인 아이템을 관리할 수 있습니다.\n");
@@ -80,18 +105,18 @@
                 {
                     if (item.getIsSoldOut())
                     {
-                        newItems.Add(item); //새로운 리스트 Item 리스트 변수에 구매한 아이템을 할당
-                                            //장착 페이지로 넘어가면 목록 앞에 숫자 출력
+                        invenItems.Add(item); //새로운 리스트 Item 리스트 변수에 구매한 아이템을 할당
                     }
                 }
-                isFrist= false;
+                isFrist = false;
             }
 
             //if (newItems.Count == 0) Console.WriteLine("암것도 없다"); //이게 출력이 되네요
             //Console.WriteLine("암것도 없다 " + newItems.Count); //이게 출력이 되네요
 
-            foreach (Item item in newItems)
+            foreach (Item item in invenItems)
             {
+                //장착 관리 페이지라면 숫자를 표시
                 if (isSetting)
                 {
                     item.showList((idx++).ToString(), true);
@@ -99,7 +124,7 @@
                 else
                     item.showList("-", true);
             }
-            
+
         }
         public void showInventoryInfo()
         {
@@ -116,17 +141,17 @@
 
                 if (command == 1)
                 {
-                    itemEquip();
+                    equipItem();
                 }
                 //입력값이 0이라면 showInventoryInfo()를 호출한 곳으로 돌아감(이전 화면으로 돌아감)
                 else if (command == 0)
                     return;
             }
         }
-        public void itemEquip()
+        public void equipItem()
         {
             Console.Clear();
-            while(true)
+            while (true)
             {
                 Console.Clear();
                 Program.showColorRed("< 인벤토리 - 장착 관리 >\n");
@@ -136,8 +161,41 @@
                 Console.WriteLine();
                 Console.WriteLine();
                 command = Program.getCommand();
-                if (command == 0) return;
+
+                //일치하는 아이템을 선택하지 않았다면,
+                if (command < 0 || command > invenItems.Count)
+                {
+                    Program.showColorRed("잘못된 입력입니다.");
+                    continue;
+                }
+                else if (command == 0) return;
+
+                foreach (Item item in invenItems)
+                {
+                    //입력한 번호에 해당하는 아이템의 장착 상태를 true라면 false로, false라면 true로 변경시켜준다.
+                    if ((command - 1) == invenItems.IndexOf(item))
+                    {
+                        item.setItemEquip();
+
+                        //현재의 item.getItemEquip()의 값이 true라면 장착 X -> 장착 O 상태로 간 것.
+                        //아이템의 능력치만큼 캐릭터의 공격력이나 방어력에 가산 연산
+                        if (item.getItemEquip())
+                        {
+                            character.setItemState(item.getPlusAttack(), item.getPlusDefense());
+                        }
+
+                        //현재의 item.getItemEquip()의 값이 false라면 장착 O -> 장착 X 상태로 간 것.
+                        //원래의 스텟에 -1을 곱한 결과로 가산 연산을 진행하므로 결과적으로 값이 줄어듬.
+                        else
+                        {
+                            int attack = (-1 * item.getPlusAttack());
+                            int denfense = (-1 * item.getPlusDefense());
+                            character.setItemState(attack, denfense);
+                        }
+                    }
+                }
             }
+
         }
     }
     class Shop
@@ -180,9 +238,9 @@
 
                 Program.showColorRed("< 상점 >\n");
                 showShoppingList(false);
-            
+
                 Console.WriteLine("\n\n1. 아이템 구매\n0. 나가기\n");
-            
+
                 command = Program.getCommand();
                 //입력값이 1이라면 아이템 구매 메소드 호출
                 if (command == 1)
@@ -200,10 +258,10 @@
             //입력에 대한 상태를 저장하는 변수
             //state는 0부터 3까지의 값(enum SHOPPING)을 가지며,
             //각 값은 아이템을 구매할 때 발생할 수 있는 상황에 대한 결과를 나타낸다.
-            int state = -1; 
+            int state = -1;
             Console.Clear();
 
-            while(true)
+            while (true)
             {
                 Console.Clear();
 
@@ -291,9 +349,17 @@
         //구매 하였는지에 대한 여부를 저장하는 변수, 장비를 하였는지에 대한 여부를 저장하는 변수
         bool isSoldOut = false, isEquipped = false;
 
+        //< 프로퍼티로 변경하기 !!!!!!!!!!!!!!!!!!!!! >
         public int getPrice() { return price; }
+
         public bool getIsSoldOut() { return isSoldOut; }
         public void setSoldOut() { isSoldOut = true; }
+
+        public void setItemEquip() { isEquipped = !isEquipped; }
+        public bool getItemEquip() { return isEquipped; }
+
+        public int getPlusAttack() { return plusAttack; }
+        public int getPlusDefense() { return plusDefense; }
 
         public Item(string name, string description, int plusAttack,
             int plusDefense, int price)
@@ -306,10 +372,15 @@
         {
             Console.WriteLine();
 
-            //장착중이라면, [E]를 표시
-            if (isEquipped)
-                Program.showColorYellow("[E] ");
             Program.showColorRed(s + " ");
+
+            //인벤토리에서 장착 여부를 확인 가능. 상점은 X
+            if (isFromInven)
+            {
+                //장착중이라면, [E]를 표시
+                if (isEquipped)
+                    Program.showColorYellow("[E] ");
+            }
             Console.Write($"{name,-12}\t|");
             if (plusAttack != 0)
                 Console.Write($"공격력 +{plusAttack,-9}\t|");
@@ -318,13 +389,12 @@
             Console.Write($"{description,-35}\t");
 
             //인벤토리에서 아이템의 정보를 표시해줄 때에는 구매 정보나 가격 표시 X
-            if (!isFromInven) 
+            if (!isFromInven)
             {
                 if (!isSoldOut)
                     Console.Write($"|{price,-5}G");
                 else Program.showColorYellow("|구매 완료");
             }
-            
 
         }
     }
@@ -332,14 +402,14 @@
     {
         static void Main(string[] args)
         {
-            Character player
-                = new Character("홍길동", 1, "전사", 10, 5, 100, 1500);
-
             List<Item> items = new List<Item>();
             setItemList(items);
 
-            Inventory inventory = new Inventory(items);
-            Shop shop = new Shop(player,items);
+
+            Character player = new Character("홍길동", 1, "전사", 10, 5, 100, 1500);
+
+            Shop shop = new Shop(player, items);
+            Inventory inventory = new Inventory(items, player);
 
             while (true)
             {
@@ -413,4 +483,5 @@
             return command;
         }
     }
+    
 }
