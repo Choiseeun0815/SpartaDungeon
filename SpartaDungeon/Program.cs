@@ -1,4 +1,6 @@
 ﻿
+using System;
+
 namespace SpartaDungeon
 {
     public enum SHOPPING
@@ -51,9 +53,14 @@ namespace SpartaDungeon
             Console.WriteLine("Lv. " + level.ToString("00"));
             Console.WriteLine($"{name} ( {job} )");
             Console.Write("공격력 : " + attack);
+
             if (itemAttack != 0) //아이템으로 인해 공격력에 증감이 있다면, 
             {
-                Console.Write(" ("); Program.showColorYellow("+" + itemAttack); Console.WriteLine(")");
+                Console.Write(" (");  
+                if(itemAttack < 0)
+                    Program.showColorRed(itemAttack.ToString());
+                else Program.showColorYellow("+" + itemAttack);
+                Console.WriteLine(")");
             }
             else Console.WriteLine();
 
@@ -61,7 +68,11 @@ namespace SpartaDungeon
 
             if (itemDefense != 0) //아이템으로 인해 방어력력에 증감이 있다면, 
             {
-                Console.Write(" ("); Program.showColorYellow("+" + itemDefense); Console.WriteLine(")");
+                Console.Write(" (");
+                if (itemDefense < 0)
+                    Program.showColorRed(itemDefense.ToString());
+                else Program.showColorYellow("+" + itemDefense);
+                Console.WriteLine(")");
             }
             else Console.WriteLine();
 
@@ -326,7 +337,7 @@ namespace SpartaDungeon
             switch (state)
             {
                 case (int)SHOPPING.Success:
-                    Program.showColorYellow("구매를 완료했습니다.");
+                    Program.showColorGreen("구매를 완료했습니다.");
                     break;
                 case (int)SHOPPING.Insufficient:
                     Program.showColorRed("!! Gold가 부족합니다."); break;
@@ -344,7 +355,14 @@ namespace SpartaDungeon
     class Item
     {
         string name, description;
+        //아이템의 공격력, 방어력, 가격
         int plusAttack, plusDefense, price;
+
+        //아이템의 능력치가 양수인지 음수인지 판단하기 위한 변수
+        bool isAttackPositive = true, isDefensePositive = true;
+
+        //+,- 부호를 저장할 변수 (공격력용, 방어력용)
+        string markA, markD;
 
         //구매 하였는지에 대한 여부를 저장하는 변수, 장비를 하였는지에 대한 여부를 저장하는 변수
         bool isSoldOut = false, isEquipped = false;
@@ -370,6 +388,9 @@ namespace SpartaDungeon
         }
         public void showList(string s, bool isFromInven)
         {
+            markA = (plusAttack > 0) ? "+" : "";
+            markD = (plusDefense > 0) ? "+" : "";
+
             Console.WriteLine();
 
             Program.showColorRed(s + " ");
@@ -381,11 +402,23 @@ namespace SpartaDungeon
                 if (isEquipped)
                     Program.showColorYellow("[E] ");
             }
+
             Console.Write($"{name,-12}\t|");
-            if (plusAttack != 0)
-                Console.Write($"공격력 +{plusAttack,-9}\t|");
-            if (plusDefense != 0)
-                Console.Write($"방어력 +{plusDefense,-9}\t|");
+
+            //아이템이 공격력과 방어력 모두에게 영향을 미치는 경우, 
+            if (plusAttack != 0 && plusDefense != 0)
+            {
+                Console.Write($"공격력 {markA}{plusAttack}, ");
+                Console.Write($"방어력 {markD}{plusDefense,-4}|");
+            }
+            else 
+            {
+                if (plusAttack != 0)
+                    Console.Write($"공격력 {markA}{plusAttack,-9}\t|");
+                if (plusDefense != 0)
+                    Console.Write($"방어력 {markD}{plusDefense,-9}\t|");
+            }
+            
             Console.Write($"{description,-35}\t");
 
             //인벤토리에서 아이템의 정보를 표시해줄 때에는 구매 정보나 가격 표시 X
@@ -406,7 +439,7 @@ namespace SpartaDungeon
             setItemList(items);
 
 
-            Character player = new Character("홍길동", 1, "전사", 10, 5, 100, 1500);
+            Character player = new Character("홍길동", 1, "전사", 10, 20, 100, 11500);
 
             Shop shop = new Shop(player, items);
             Inventory inventory = new Inventory(items, player);
@@ -456,12 +489,12 @@ namespace SpartaDungeon
         {
             list.Add(new Item("수련자 갑옷", "수련에 도움을 주는 갑옷입니다.", 0, 5, 1000));
             list.Add(new Item("무쇠 갑옷", "무쇠로 만들어져 튼튼한 갑옷입니다.", 0, 9, 200));
-            list.Add(new Item("스파르타의 갑옷", "스파르타의 전사들이 사용했다는 전설의 갑옷입니다."
-                , 0, 15, 3500));
+            list.Add(new Item("스파르타의 갑옷", "스파르타의 전사들이 사용했다는 전설의 갑옷입니다.", 0, 15, 3500));
+
             list.Add(new Item("낡은 검", "쉽게 볼 수 있는 낡은 검입니다.", 2, 0, 600));
             list.Add(new Item("청동 도끼", "어디선가 사용됐던거 같은 도끼입니다.", 5, 0, 1500));
-            list.Add(new Item("스파르타의 창", "스파르타의 전사들이 사용했다는 전설의 창입니다.",
-                7, 0, 2000));
+            list.Add(new Item("스파르타의 창", "스파르타의 전사들이 사용했다는 전설의 창입니다.", 7, 0, 2000));
+            list.Add(new Item("타노스의 건틀렛", "큰 힘에는 큰 책임이 따릅니다.", 20, -10, 5000));
         }
         public static void showColorRed(string str)
         {
@@ -475,9 +508,14 @@ namespace SpartaDungeon
             Console.Write(str);
             Console.ResetColor();
         }
+        public static void showColorGreen(string str)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write(str);
+            Console.ResetColor();
+        }
         public static int getCommand()
         {
-
             Console.Write("원하시는 행동을 입력해주세요(0 → 이전으로 돌아가기).\n>> ");
             int command = int.Parse(Console.ReadLine());
             return command;
