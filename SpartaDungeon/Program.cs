@@ -57,7 +57,7 @@ namespace SpartaDungeon
         public void setAttack(int attack) { this.attack += attack; }
         public void setDefense(int defense) { this.defense += defense;}
 
-        public int getHP() { return hp; }
+        public int getHP() { if (hp < 0) hp = 0; return hp; }
         public int getAttack() { return attack; }
         public int getDefense() { return defense; }
         
@@ -71,12 +71,14 @@ namespace SpartaDungeon
         {
             this.attack += attack; this.defense += defense;
             itemAttack += attack; itemDefense += defense;
-
-            if (this.attack < 0) this.attack = 0;
-            if (this.defense < 0) this.defense = 0;
         }
         public void showCharacterInfo()
         {
+            int a = getAttack();
+            if (a < 0) a = 0;
+            int d = getDefense();
+            if (d < 0) d = 0;
+
             while (true)
             {
                 Console.Clear();
@@ -86,7 +88,7 @@ namespace SpartaDungeon
 
                 Console.WriteLine("Lv. " + level.ToString("00"));
                 Console.WriteLine($"{name} ( {job} )");
-                Console.Write("공격력 : " + attack);
+                Console.Write("공격력 : " + a);
 
                 if (itemAttack != 0) //아이템으로 인해 공격력에 증감이 있다면, 
                 {
@@ -98,7 +100,7 @@ namespace SpartaDungeon
                 }
                 else Console.WriteLine();
 
-                Console.Write("방어력 : " + defense);
+                Console.Write("방어력 : " + d);
 
                 if (itemDefense != 0) //아이템으로 인해 방어력력에 증감이 있다면, 
                 {
@@ -220,6 +222,7 @@ namespace SpartaDungeon
                         //현재의 item.getItemEquip()의 값이 true라면 장착 X -> 장착 O 상태로 간 것.
                         if (item.getItemEquip())
                         {
+
                             //장착하려는 아이템의 유형이 무기일 때, 
                             if (item.getType() == ItemType.Weapon)
                             {
@@ -230,7 +233,6 @@ namespace SpartaDungeon
                                     Item preItem = character.getItemWeapon();
                                     preItem.setItemEquip();
 
-                                    //해제된 아이템의 능력치를 감산해줌
                                     int attack = (-1 * preItem.getPlusAttack());
                                     int denfense = (-1 * preItem.getPlusDefense());
                                     character.setItemState(attack, denfense);
@@ -281,7 +283,7 @@ namespace SpartaDungeon
                             //원래의 스텟에 -1을 곱한 결과로 가산 연산을 진행하므로 결과적으로 값이 줄어듬.
                             int attack = (-1 * item.getPlusAttack());
                             int denfense = (-1 * item.getPlusDefense());
-                            character.setItemState(attack, denfense);
+                            character.setItemState(attack , denfense);
                         }
                     }
                 }
@@ -593,25 +595,28 @@ namespace SpartaDungeon
                 Console.WriteLine($"{character.Gold}\n");
 
                 clearCnt++;
+
                 if(character.getCurrentLevel() == clearCnt)
                 {
-                    Program.showColorGreen("!!레벨업을 축하드립니다!!\n\n");
+                    clearCnt = 0;
+                    Program.showColorGreen("!!레벨업을 축하드립니다!!\n");
 
                     Program.showColorYellow("[Level UP!]\n");
-                    Console.WriteLine($"{character.getCurrentLevel()}LV → {character.getCurrentLevel() + 1}LV");
+                    Console.WriteLine($"{character.getCurrentLevel()}LV → {character.getCurrentLevel() + 1}LV\n");
                     character.levelUP();
 
                     //기본 공격력은 0.5, 방어력은 1 증가
                     Program.showColorYellow("[공격력] ");
-                    Console.Write($"- {character.getAttack()} → ");
-                    int num = (int)(character.getAttack() * 0.5); //이건 현재 공격력의 50%
+                    Console.Write($"\n{character.getAttack()} → ");
+                    int num = (int)(character.getAttack() * 0.5); //현재 공격력의 50%
                     character.setAttack(num);
-                    Console.Write($"{character.getAttack()}\n");
+                    Console.WriteLine($"{character.getAttack()}\n");
 
                     Program.showColorYellow("[방어력] ");
-                    Console.Write($"- {character.getAttack()} → ");
-                    character.setAttack(1);
-                    Console.Write($"{character.getAttack()}\n");
+                    Console.Write($"\n{character.getDefense()} → ");
+                    num = (int)(character.getDefense() * 0.3); //현재 방어력의 30%
+                    character.setDefense(num);
+                    Console.WriteLine($"{character.getDefense()}\n");
                 }
             }
             else
