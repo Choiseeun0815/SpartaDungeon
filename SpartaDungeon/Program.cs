@@ -26,8 +26,7 @@ namespace SpartaDungeon
         //이름, 전직
         string name, job;
 
-        //방어구, 무기에 대한 장착 여부를 저장할 변수
-        bool Armor = false, Weapon = false;
+        //방어구, 무기에 대한 장착 정보를 저장할 변수
         Item? itemWeapon, itemArmor;
 
         int itemAttack = 0, itemDefense = 0;
@@ -48,20 +47,25 @@ namespace SpartaDungeon
         {
             this.gold -= minus;
         }
-        //public void setArmor(bool armor) { Armor = armor; }
-        //public void setWeapon(bool weapon) { Weapon = weapon; }
+
+        public void setHP(int hp) { this.hp = hp;}
+        public int getAttack() { return attack; }
+        public int getDefense() { return defense; }
+        public int getHP() { return hp; }
+        
         public void setItemWeapon(Item i) { itemWeapon = i; }
         public void setItemArmor(Item i) { itemArmor = i; }
         public Item getItemWeapon() { return itemWeapon; }
         public Item getItemArmor() { return itemArmor; }
-        //public bool isEquipArmor() { return Armor; }
-        //public bool isEquipWeapon() { return Weapon; }
 
         //장착한 아이템에 대하여 능력치를 적용해주는 함수
         public void setItemState(int attack, int defense)
         {
             this.attack += attack; this.defense += defense;
             itemAttack += attack; itemDefense += defense;
+
+            if (this.attack < 0) this.attack = 0;
+            if (this.defense < 0) this.defense = 0;
         }
         public void showCharacterInfo()
         {
@@ -492,6 +496,112 @@ namespace SpartaDungeon
             state = -1;
         }
     }
+    class Dungeon
+    {
+        Character character;
+
+        int command;
+        int[] setDefenseHard = [5, 11, 17];
+        string[] DungeonName = ["쉬운 던전", "일반 던전", "어려운 던전"];
+        int[] reward = [1000, 1700, 2500];
+
+        public Dungeon(Character character)
+        {
+            this.character = character;
+        }
+
+        public void showDungeonInfo()
+        {
+            while(true)
+            {
+                Console.Clear();
+
+                Program.showColorRed("< 던전 입장 >\n");
+                Console.WriteLine("이곳에서 던전으로 들어가기 전 활동을 할 수 있습니다.\n");
+
+                for(int i=0;i<3;i++)
+                {
+                    Program.showColorYellow((i+1).ToString());
+                    Console.Write($". {DungeonName[i],10}\t| ");
+                    Console.Write("방어력 ");
+                    Program.showColorYellow(setDefenseHard[i].ToString());
+                    Console.WriteLine(" 이상 권장");
+                }
+
+                Console.WriteLine();
+                command = Program.CheckCommandVaild(0, 3);
+
+                if (command == 0) return;
+
+                CheckDungeonClear(command);
+            }
+        }
+        void CheckDungeonClear(int idx)
+        {
+            //권장 방어력보다 높을 경우 무조건 클리어이므로,
+            //isClear의 초기값을 true로 설정
+            bool isClear = true;
+
+            //권장 방어력보다 낮을 경우,
+            if (character.getDefense() < setDefenseHard[idx-1])
+            {
+                //num에는 0부터 9까지의 숫자가 랜덤으로 저장.
+                int rnd = new Random().Next(0, 10);
+
+                //만일 랜덤으로 나온 rnd의 결과가 0,1,2,3 中 하나라면(40%),
+                //던전 실패 isClear = false
+                isClear = rnd > 4;
+            }
+
+            Console.Clear();
+
+            if (isClear) 
+            {
+                Program.showColorRed("< 던전 클리어 >\n");
+                Console.WriteLine("축하합니다!!");
+                Console.WriteLine($"{DungeonName[idx-1]}을 클리어 하였습니다.\n");
+
+                Program.showColorYellow("[탐험 결과]\n");
+
+                int minusHp = setDefenseHard[idx-1] - character.getDefense();
+                int rnd = new Random().Next((20 + minusHp), (35 + minusHp));
+
+                int hp = character.getHP() - rnd;
+
+                //공격력 ~ 공격력*2% 만큼의 추가 보상
+                rnd = new Random().Next(character.getAttack(), 2 * character.getAttack());
+
+                //클리어 기본 보상 + 클리어 기본 보상의 (공격력 ~ 공격력x2) % 만큼의 추가 보상
+                int Gold = reward[idx - 1] + reward[idx - 1] * rnd / 100;
+                
+                Console.Write($"체력 {character.getHP()} ");
+                Program.showColorYellow("→ ");
+                character.setHP(hp);
+                Console.WriteLine($"{character.getHP()}\n");
+
+                Console.Write($"Gold {character.Gold} ");
+                character.setGold(-1 * Gold);
+                Program.showColorYellow("→ ");
+                Console.WriteLine($"{character.Gold}\n");
+            }
+            else
+            {
+                int hp = character.getHP() / 2;
+
+                Program.showColorRed("< 던전 공략 실패 >\n");
+                Console.WriteLine($"{DungeonName[idx-1]}을 클리어하지 못했습니다.\n");
+
+                Program.showColorYellow("[탐험 결과]\n");
+                Console.Write($"체력 {character.getHP()} ");
+                Program.showColorYellow("→ ");
+                Console.WriteLine($"{hp}\n");
+
+                character.setHP(hp);
+            }
+            command = Program.CheckCommandVaild(0, 0);
+            if (command == 0) return;
+        }
+    }
     class Item
     {
         string name, description;
@@ -584,6 +694,7 @@ namespace SpartaDungeon
 
             Inventory inventory = new Inventory(items, player);
             Shop shop = new Shop(player, items, inventory);
+            Dungeon dungeon = new Dungeon(player);
 
             int? command = null;
 
@@ -602,7 +713,7 @@ namespace SpartaDungeon
                 }
                 //Console.Write("원하시는 행동을 입력해주세요(0 → 프로그램 종료).\n>> ");
                 //int command = int.Parse(Console.ReadLine());
-                command = CheckCommandVaild(0, 3);
+                command = CheckCommandVaild(0, 4);
                 
                 if (command == 0)
                 {
@@ -619,6 +730,8 @@ namespace SpartaDungeon
                     case 3:
                         shop.showShopInfo();
                         break;
+                    case 4:
+                        dungeon.showDungeonInfo(); break;
                     default:
                         break;
                 }
@@ -630,6 +743,7 @@ namespace SpartaDungeon
             Console.WriteLine("1. 상태 보기");
             Console.WriteLine("2. 인벤토리");
             Console.WriteLine("3. 상점");
+            Console.WriteLine("4. 던전 입장");
             Console.WriteLine();
         }
         static void setItemList(List<Item> list)
