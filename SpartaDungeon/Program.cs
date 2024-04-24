@@ -1,6 +1,4 @@
-﻿
-using System;
-
+﻿using System;
 namespace SpartaDungeon
 {
     public enum SHOPPING
@@ -8,7 +6,12 @@ namespace SpartaDungeon
         Success, //구매 성공! → 정수형으로 변환하면 0
         Insufficient, //gold가 부족! → 정수형으로 변환하면 1
         SoldOut, //이미 판매됨! → 정수형으로 변환하면 2
-        WrongInput //잘못된 입력값! → 정수형으로 변환하면 3
+        //WrongInput //잘못된 입력값! → 정수형으로 변환하면 3
+    }
+    //잘못된 입력을 판별하기 위한 구조체
+    public enum CommandValid
+    {
+        InValid = -1,
     }
     class Character
     {
@@ -45,45 +48,55 @@ namespace SpartaDungeon
         }
         public void showCharacterInfo()
         {
-            Console.Clear();
-
-            Program.showColorRed("< 상태 보기 >\n");
-            Console.WriteLine("캐릭터의 정보가 표시됩니다.\n");
-
-            Console.WriteLine("Lv. " + level.ToString("00"));
-            Console.WriteLine($"{name} ( {job} )");
-            Console.Write("공격력 : " + attack);
-
-            if (itemAttack != 0) //아이템으로 인해 공격력에 증감이 있다면, 
+            while (true)
             {
-                Console.Write(" (");  
-                if(itemAttack < 0)
-                    Program.showColorRed(itemAttack.ToString());
-                else Program.showColorYellow("+" + itemAttack);
-                Console.WriteLine(")");
+                Console.Clear();
+
+                Program.showColorRed("< 상태 보기 >\n");
+                Console.WriteLine("캐릭터의 정보가 표시됩니다.\n");
+
+                Console.WriteLine("Lv. " + level.ToString("00"));
+                Console.WriteLine($"{name} ( {job} )");
+                Console.Write("공격력 : " + attack);
+
+                if (itemAttack != 0) //아이템으로 인해 공격력에 증감이 있다면, 
+                {
+                    Console.Write(" (");
+                    if (itemAttack < 0)
+                        Program.showColorRed(itemAttack.ToString());
+                    else Program.showColorYellow("+" + itemAttack);
+                    Console.WriteLine(")");
+                }
+                else Console.WriteLine();
+
+                Console.Write("방어력 : " + defense);
+
+                if (itemDefense != 0) //아이템으로 인해 방어력력에 증감이 있다면, 
+                {
+                    Console.Write(" (");
+                    if (itemDefense < 0)
+                        Program.showColorRed(itemDefense.ToString());
+                    else Program.showColorYellow("+" + itemDefense);
+                    Console.WriteLine(")");
+                }
+                else Console.WriteLine();
+
+                Console.WriteLine("체력 : " + hp);
+                Console.WriteLine("Gold : {0}G", gold);
+
+                Console.WriteLine();
+
+                if (command == (int)CommandValid.InValid)
+                {
+                    Program.showColorRed("잘못된 입력입니다.\n"); ;
+                }
+
+                command = Program.CheckCommandVaild(0, 0);
+
+                if (command == 0)
+                    return;
             }
-            else Console.WriteLine();
-
-            Console.Write("방어력 : " + defense);
-
-            if (itemDefense != 0) //아이템으로 인해 방어력력에 증감이 있다면, 
-            {
-                Console.Write(" (");
-                if (itemDefense < 0)
-                    Program.showColorRed(itemDefense.ToString());
-                else Program.showColorYellow("+" + itemDefense);
-                Console.WriteLine(")");
-            }
-            else Console.WriteLine();
-
-            Console.WriteLine("체력 : " + hp);
-            Console.WriteLine("Gold : {0}G", gold);
-
-            Console.WriteLine();
-
-            command = Program.getCommand();
-            if (command == 0)
-                return;
+            
         }
 
     }
@@ -148,7 +161,11 @@ namespace SpartaDungeon
                 showInventoryList(false);
 
                 Console.WriteLine("\n\n1. 장착 관리\n0. 나가기\n");
-                command = Program.getCommand();
+                if (command == (int)CommandValid.InValid)
+                {
+                    Program.showColorRed("잘못된 입력입니다.\n"); ;
+                }
+                command = Program.CheckCommandVaild(0, 1);
 
                 if (command == 1)
                 {
@@ -171,15 +188,13 @@ namespace SpartaDungeon
 
                 Console.WriteLine();
                 Console.WriteLine();
-                command = Program.getCommand();
-
-                //일치하는 아이템을 선택하지 않았다면,
-                if (command < 0 || command > invenItems.Count)
+                if (command == (int)CommandValid.InValid)
                 {
-                    Program.showColorRed("잘못된 입력입니다.");
-                    continue;
+                    Program.showColorRed("잘못된 입력입니다.\n"); ;
                 }
-                else if (command == 0) return;
+                command = Program.CheckCommandVaild(0, invenItems.Count);
+
+                if (command == 0) return;
 
                 foreach (Item item in invenItems)
                 {
@@ -252,7 +267,12 @@ namespace SpartaDungeon
 
                 Console.WriteLine("\n\n1. 아이템 구매\n0. 나가기\n");
 
-                command = Program.getCommand();
+                if (command == (int)CommandValid.InValid)
+                {
+                    Program.showColorRed("잘못된 입력입니다.\n"); ;
+                }
+
+                command = Program.CheckCommandVaild(0, 1);
                 //입력값이 1이라면 아이템 구매 메소드 호출
                 if (command == 1)
                 {
@@ -286,15 +306,19 @@ namespace SpartaDungeon
                 }
 
                 Console.WriteLine();
-                Console.WriteLine();
-                command = Program.getCommand();
-
-                if (command < 0 || command > items.Count)
+                if (command == (int)CommandValid.InValid)
                 {
-                    state = (int)SHOPPING.WrongInput;
-                    continue;
+                    Program.showColorRed("잘못된 입력입니다.\n"); ;
                 }
-                else if (command == 0) return;
+                
+                command = Program.CheckCommandVaild(0, items.Count);
+
+                //if (command < 0 || command > items.Count)
+                //{
+                //    state = (int)SHOPPING.WrongInput;
+                //    continue;
+                //}
+                if (command == 0) return;
 
                 foreach (Item item in items)
                 {
@@ -343,9 +367,7 @@ namespace SpartaDungeon
                     Program.showColorRed("!! Gold가 부족합니다."); break;
                 case (int)SHOPPING.SoldOut:
                     Program.showColorYellow("!! 이미 구매한 아이템입니다."); break;
-                case (int)SHOPPING.WrongInput:
-                    Program.showColorRed("잘못된 입력입니다.");
-                    break;
+                
                 default:
                     break;
             }
@@ -438,26 +460,35 @@ namespace SpartaDungeon
             List<Item> items = new List<Item>();
             setItemList(items);
 
-
             Character player = new Character("홍길동", 1, "전사", 10, 20, 100, 11500);
 
             Shop shop = new Shop(player, items);
             Inventory inventory = new Inventory(items, player);
 
+            int? command = null;
+
             while (true)
             {
+                Console.Clear();
+
                 Console.WriteLine("스파르타 마을에 오신 여러분 환영합니다.");
                 Console.WriteLine("이곳에서 던전으로 들어가기 전 활동을 할 수 있습니다.\n");
 
                 showMenu();
 
-                Console.Write("원하시는 행동을 입력해주세요(0 → 프로그램 종료).\n>> ");
-                int command = int.Parse(Console.ReadLine());
+                if (command == (int)CommandValid.InValid)
+                {
+                    showColorRed("잘못된 입력입니다.\n");
+                }
+                //Console.Write("원하시는 행동을 입력해주세요(0 → 프로그램 종료).\n>> ");
+                //int command = int.Parse(Console.ReadLine());
+                command = CheckCommandVaild(0, 3);
+                
+                
                 if (command == 0)
                 {
                     Console.WriteLine("던전 게임을 종료합니다."); break;
                 }
-
                 switch (command)
                 {
                     case 1:
@@ -470,11 +501,9 @@ namespace SpartaDungeon
                         shop.showShopInfo();
                         break;
                     default:
-                        Console.WriteLine("잘못된 입력입니다.");
                         break;
                 }
 
-                Console.Clear();
             }
         }
 
@@ -514,11 +543,22 @@ namespace SpartaDungeon
             Console.Write(str);
             Console.ResetColor();
         }
-        public static int getCommand()
+
+        //함수의 매개변수로 커맨드의 입력 범위를 받음. 
+        //ex) 0 - 나가기, 1 - 구매하기, 2 - 판매하기 → start는 0, end는 2.
+        public static int CheckCommandVaild(int start, int end)
         {
             Console.Write("원하시는 행동을 입력해주세요(0 → 이전으로 돌아가기).\n>> ");
-            int command = int.Parse(Console.ReadLine());
-            return command;
+            string command = Console.ReadLine();
+            int input;
+
+            //입력한 커맨드가 int로 변환이 불가능하거나, 명령으로 등록되지 않은 숫자를 입력하였을 경우, 
+            if (!int.TryParse(command, out input) || input < start || input > end)
+            {
+                return -1;
+            }
+
+            return input;
         }
     }
     
