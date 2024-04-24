@@ -50,10 +50,16 @@ namespace SpartaDungeon
                 gold = 0;
         }
 
+        public int getCurrentLevel() { return level; }
+        public void levelUP() { level++; }
+
         public void setHP(int hp) { this.hp = hp;}
+        public void setAttack(int attack) { this.attack += attack; }
+        public void setDefense(int defense) { this.defense += defense;}
+
+        public int getHP() { return hp; }
         public int getAttack() { return attack; }
         public int getDefense() { return defense; }
-        public int getHP() { return hp; }
         
         public void setItemWeapon(Item i) { itemWeapon = i; }
         public void setItemArmor(Item i) { itemArmor = i; }
@@ -502,7 +508,7 @@ namespace SpartaDungeon
     {
         Character character;
 
-        int command;
+        int command, clearCnt = 0;
         int[] setDefenseHard = [5, 11, 17];
         string[] DungeonName = ["쉬운 던전", "일반 던전", "어려운 던전"];
         int[] reward = [1000, 1700, 2500];
@@ -585,6 +591,28 @@ namespace SpartaDungeon
                 character.setGold(-1 * Gold);
                 Program.showColorYellow("→ ");
                 Console.WriteLine($"{character.Gold}\n");
+
+                clearCnt++;
+                if(character.getCurrentLevel() == clearCnt)
+                {
+                    Program.showColorGreen("!!레벨업을 축하드립니다!!\n\n");
+
+                    Program.showColorYellow("[Level UP!]\n");
+                    Console.WriteLine($"{character.getCurrentLevel()}LV → {character.getCurrentLevel() + 1}LV");
+                    character.levelUP();
+
+                    //기본 공격력은 0.5, 방어력은 1 증가
+                    Program.showColorYellow("[공격력] ");
+                    Console.Write($"- {character.getAttack()} → ");
+                    int num = (int)(character.getAttack() * 0.5); //이건 현재 공격력의 50%
+                    character.setAttack(num);
+                    Console.Write($"{character.getAttack()}\n");
+
+                    Program.showColorYellow("[방어력] ");
+                    Console.Write($"- {character.getAttack()} → ");
+                    character.setAttack(1);
+                    Console.Write($"{character.getAttack()}\n");
+                }
             }
             else
             {
