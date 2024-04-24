@@ -6,12 +6,17 @@ namespace SpartaDungeon
         Success, //구매 성공! → 정수형으로 변환하면 0
         Insufficient, //gold가 부족! → 정수형으로 변환하면 1
         SoldOut, //이미 판매됨! → 정수형으로 변환하면 2
-        //WrongInput //잘못된 입력값! → 정수형으로 변환하면 3
     }
+
     //잘못된 입력을 판별하기 위한 구조체
     public enum CommandValid
     {
         InValid = -1,
+    }
+    public enum ItemType
+    {
+        Armor,
+        Weapon,
     }
     class Character
     {
@@ -20,6 +25,10 @@ namespace SpartaDungeon
         int level, attack, defense, hp, gold;
         //이름, 전직
         string name, job;
+
+        //방어구, 무기에 대한 장착 여부를 저장할 변수
+        bool Armor = false, Weapon = false;
+        Item? itemWeapon, itemArmor;
 
         int itemAttack = 0, itemDefense = 0;
 
@@ -39,6 +48,14 @@ namespace SpartaDungeon
         {
             this.gold -= minus;
         }
+        //public void setArmor(bool armor) { Armor = armor; }
+        //public void setWeapon(bool weapon) { Weapon = weapon; }
+        public void setItemWeapon(Item i) { itemWeapon = i; }
+        public void setItemArmor(Item i) { itemArmor = i; }
+        public Item getItemWeapon() { return itemWeapon; }
+        public Item getItemArmor() { return itemArmor; }
+        //public bool isEquipArmor() { return Armor; }
+        //public bool isEquipWeapon() { return Weapon; }
 
         //장착한 아이템에 대하여 능력치를 적용해주는 함수
         public void setItemState(int attack, int defense)
@@ -96,7 +113,6 @@ namespace SpartaDungeon
                 if (command == 0)
                     return;
             }
-            
         }
 
     }
@@ -123,22 +139,6 @@ namespace SpartaDungeon
 
             int idx = 1;
 
-            ////딱 한 번만 실행!
-            //if (isFirst)
-            //{
-            //    foreach (Item item in items)
-            //    {
-            //        if (item.getIsSoldOut())
-            //        {
-            //            invenItems.Add(item); //새로운 리스트 Item 리스트 변수에 구매한 아이템을 할당
-            //        }
-            //    }
-            //    isFirst = false;
-            //}
-
-            //if (newItems.Count == 0) Console.WriteLine("암것도 없다"); //이게 출력이 되네요
-            //Console.WriteLine("암것도 없다 " + newItems.Count); //이게 출력이 되네요
-
             foreach (Item item in invenItems)
             {
                 //장착 관리 페이지라면 숫자를 표시
@@ -149,7 +149,6 @@ namespace SpartaDungeon
                 else
                     item.showList("-", true);
             }
-
         }
         public void showInventoryInfo()
         {
@@ -202,22 +201,72 @@ namespace SpartaDungeon
 
                 foreach (Item item in invenItems)
                 {
-                    //입력한 번호에 해당하는 아이템의 장착 상태를 true라면 false로, false라면 true로 변경시켜준다.
                     if ((command - 1) == invenItems.IndexOf(item))
                     {
                         item.setItemEquip();
 
                         //현재의 item.getItemEquip()의 값이 true라면 장착 X -> 장착 O 상태로 간 것.
-                        //아이템의 능력치만큼 캐릭터의 공격력이나 방어력에 가산 연산
                         if (item.getItemEquip())
                         {
+                            //장착하려는 아이템의 유형이 무기일 때, 
+                            if (item.getType() == ItemType.Weapon)
+                            {
+                                //현재 캐릭터가 무기를 장착한 상태라면, 
+                                if (character.getItemWeapon() !=null)
+                                {
+                                    //이전에 장착한 아이템에 대한 정보를 불러와 장착 상태를 해제
+                                    Item preItem = character.getItemWeapon();
+                                    preItem.setItemEquip();
+
+                                    //해제된 아이템의 능력치를 감산해줌
+                                    int attack = (-1 * preItem.getPlusAttack());
+                                    int denfense = (-1 * preItem.getPlusDefense());
+                                    character.setItemState(attack, denfense);
+
+                                    //현재 아이템을 장착중인 아이템으로 등록
+                                    character.setItemWeapon(item);
+                                }
+                                //장착한 상태가 아닐 경우 현재 아이템을 장착중인 아이템으로 등록
+                                else
+                                {
+                                    character.setItemWeapon(item);
+                                }
+
+                            }
+                            //장착하려는 아이템의 유형이 방어구일 때,
+                            if(item.getType() == ItemType.Armor)
+                            {
+                                
+                                if (character.getItemArmor() != null)
+                                {
+                                    Item preItem = character.getItemArmor();
+                                    preItem.setItemEquip();
+
+                                    int attack = (-1 * preItem.getPlusAttack());
+                                    int denfense = (-1 * preItem.getPlusDefense());
+                                    character.setItemState(attack, denfense);
+
+                                    character.setItemArmor(item);
+                                }
+                                else
+                                {
+                                    character.setItemArmor(item);
+                                }
+                            }
+
+                            //아이템의 능력치만큼 캐릭터의 공격력이나 방어력에 가산 연산
                             character.setItemState(item.getPlusAttack(), item.getPlusDefense());
                         }
-
                         //현재의 item.getItemEquip()의 값이 false라면 장착 O -> 장착 X 상태로 간 것.
-                        //원래의 스텟에 -1을 곱한 결과로 가산 연산을 진행하므로 결과적으로 값이 줄어듬.
                         else
                         {
+                            //장착을 해제할 때 아이템의 타입에 따라 무기/방어구 정보를 null로 바꾸어줌
+                            if (item.getType() == ItemType.Weapon)
+                                character.setItemWeapon(null);
+                            if (item.getType() == ItemType.Armor)
+                                character.setItemArmor(null);
+
+                            //원래의 스텟에 -1을 곱한 결과로 가산 연산을 진행하므로 결과적으로 값이 줄어듬.
                             int attack = (-1 * item.getPlusAttack());
                             int denfense = (-1 * item.getPlusDefense());
                             character.setItemState(attack, denfense);
@@ -437,7 +486,6 @@ namespace SpartaDungeon
                     Program.showColorRed("!! Gold가 부족합니다."); break;
                 case (int)SHOPPING.SoldOut:
                     Program.showColorYellow("!! 이미 구매한 아이템입니다."); break;
-                
                 default:
                     break;
             }
@@ -447,11 +495,12 @@ namespace SpartaDungeon
     class Item
     {
         string name, description;
+
         //아이템의 공격력, 방어력, 가격
         int plusAttack, plusDefense, price;
 
-        //아이템의 능력치가 양수인지 음수인지 판단하기 위한 변수
-        bool isAttackPositive = true, isDefensePositive = true;
+        //아이템이 방어구인지 무기인지 구별하기 위한 열거형 변수
+        ItemType type;
 
         //+,- 부호를 저장할 변수 (공격력용, 방어력용)
         string markA, markD;
@@ -459,7 +508,6 @@ namespace SpartaDungeon
         //구매 하였는지에 대한 여부를 저장하는 변수, 장비를 하였는지에 대한 여부를 저장하는 변수
         bool isSoldOut = false, isEquipped = false;
 
-        //< 프로퍼티로 변경하기 !!!!!!!!!!!!!!!!!!!!! >
         public int getPrice() { return price; }
 
         public bool getIsSoldOut() { return isSoldOut; }
@@ -471,12 +519,15 @@ namespace SpartaDungeon
         public int getPlusAttack() { return plusAttack; }
         public int getPlusDefense() { return plusDefense; }
 
+        public ItemType getType() { return type; }
+
         public Item(string name, string description, int plusAttack,
-            int plusDefense, int price)
+            int plusDefense, int price, ItemType type)
         {
             this.name = name; this.description = description;
             this.plusAttack = plusAttack; this.plusDefense = plusDefense;
             this.price = price;
+            this.type = type;
         }
         public void showList(string s, bool isFromInven)
         {
@@ -520,7 +571,6 @@ namespace SpartaDungeon
                     Console.Write($"|{price,-5}G");
                 else Program.showColorYellow("|구매 완료");
             }
-
         }
     }
     internal class Program
@@ -554,7 +604,6 @@ namespace SpartaDungeon
                 //int command = int.Parse(Console.ReadLine());
                 command = CheckCommandVaild(0, 3);
                 
-                
                 if (command == 0)
                 {
                     Console.WriteLine("던전 게임을 종료합니다."); break;
@@ -573,7 +622,6 @@ namespace SpartaDungeon
                     default:
                         break;
                 }
-
             }
         }
 
@@ -586,14 +634,15 @@ namespace SpartaDungeon
         }
         static void setItemList(List<Item> list)
         {
-            list.Add(new Item("수련자 갑옷", "수련에 도움을 주는 갑옷입니다.", 0, 5, 1000));
-            list.Add(new Item("무쇠 갑옷", "무쇠로 만들어져 튼튼한 갑옷입니다.", 0, 9, 200));
-            list.Add(new Item("스파르타의 갑옷", "스파르타의 전사들이 사용했다는 전설의 갑옷입니다.", 0, 15, 3500));
+            list.Add(new Item("수련자 갑옷", "수련에 도움을 주는 갑옷입니다.", 0, 5, 1000, ItemType.Armor));
+            list.Add(new Item("무쇠 갑옷", "무쇠로 만들어져 튼튼한 갑옷입니다.", 0, 9, 200, ItemType.Armor));
+            list.Add(new Item("스파르타의 갑옷", "스파르타의 전사들이 사용했다는 전설의 갑옷입니다.", 0, 15, 3500, ItemType.Armor));
+            list.Add(new Item("저주받은 갑옷", "그 어떠한 공격도 막아낼 수 있으나...", -30, 40, 8000, ItemType.Armor));
 
-            list.Add(new Item("낡은 검", "쉽게 볼 수 있는 낡은 검입니다.", 2, 0, 600));
-            list.Add(new Item("청동 도끼", "어디선가 사용됐던거 같은 도끼입니다.", 5, 0, 1500));
-            list.Add(new Item("스파르타의 창", "스파르타의 전사들이 사용했다는 전설의 창입니다.", 7, 0, 2000));
-            list.Add(new Item("타노스의 건틀렛", "큰 힘에는 큰 책임이 따릅니다.", 20, -10, 5000));
+            list.Add(new Item("낡은 검", "쉽게 볼 수 있는 낡은 검입니다.", 2, 0, 600,ItemType.Weapon));
+            list.Add(new Item("청동 도끼", "어디선가 사용됐던거 같은 도끼입니다.", 5, 0, 1500, ItemType.Weapon));
+            list.Add(new Item("스파르타의 창", "스파르타의 전사들이 사용했다는 전설의 창입니다.", 7, 0, 2000,ItemType.Weapon));
+            list.Add(new Item("타노스의 건틀렛", "큰 힘에는 큰 책임이 따릅니다.", 20, -10, 5000, ItemType.Weapon));
         }
         public static void showColorRed(string str)
         {
