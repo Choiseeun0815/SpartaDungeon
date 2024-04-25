@@ -1,9 +1,8 @@
-﻿
-
 using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Numerics;
+
 namespace SpartaDungeon
 {
     public enum SHOPPING
@@ -139,8 +138,11 @@ namespace SpartaDungeon
         //List<Item> items;
         //소지 중인 아이템을 저장할 List
         private List<Item> invenItems = new List<Item>();
+        private Character character;
+
+        public Character invenCharacter { get { return character; } set { character = value; } }
         public List<Item>  InvenItems { get { return invenItems;  } set { invenItems = value; } }
-        Character character;
+        
         public Inventory() { }
         public Inventory(Character character)
         {
@@ -230,7 +232,7 @@ namespace SpartaDungeon
                             if (item.Type == ItemType.Weapon)
                             {
                                 //현재 캐릭터가 무기를 장착한 상태라면, 
-                                if (character.Weapon !=null)
+                                if (character.Weapon != null)
                                 {
                                     //이전에 장착한 아이템에 대한 정보를 불러와 장착 상태를 해제
                                     Item preItem = character.Weapon;
