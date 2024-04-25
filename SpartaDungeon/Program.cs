@@ -1,6 +1,8 @@
 ﻿using System;
 namespace SpartaDungeon
 {
+    
+
     public enum SHOPPING
     {
         Success, //구매 성공! → 정수형으로 변환하면 0
@@ -18,7 +20,7 @@ namespace SpartaDungeon
         Armor,
         Weapon,
     }
-    class Character
+    public class Character
     {
         int command;
         //레벨, 공격력, 방어력, 체력, 골드
@@ -42,29 +44,22 @@ namespace SpartaDungeon
             this.hp = hp;
             this.gold = gold;
         }
+
+        public int Level { get { return level; } set { level += value; } }
+        public int HP { get { if (hp < 0) hp = 0; return hp; } set { hp = value; } }
+        public int Attack { get { return attack; } set { attack += value; } }
+        public int Defense{ get { return defense; } set { defense += value; } }
         public int Gold { get { return gold; } }
+        public string Name { get { return name; } }
+        public string Job { get { return job; } }
+        public Item Weapon { get { return itemWeapon; } set { itemWeapon = value; } }
+        public Item Armor { get { return itemArmor; } set { itemArmor = value; } }
         public void setGold(int minus)
         {
             this.gold -= minus;
             if(this.gold <=0)
                 gold = 0;
         }
-
-        public int getCurrentLevel() { return level; }
-        public void levelUP() { level++; }
-
-        public void setHP(int hp) { this.hp = hp;}
-        public void setAttack(int attack) { this.attack += attack; }
-        public void setDefense(int defense) { this.defense += defense;}
-
-        public int getHP() { if (hp < 0) hp = 0; return hp; }
-        public int getAttack() { return attack; }
-        public int getDefense() { return defense; }
-        
-        public void setItemWeapon(Item i) { itemWeapon = i; }
-        public void setItemArmor(Item i) { itemArmor = i; }
-        public Item getItemWeapon() { return itemWeapon; }
-        public Item getItemArmor() { return itemArmor; }
 
         //장착한 아이템에 대하여 능력치를 적용해주는 함수
         public void setItemState(int attack, int defense)
@@ -74,9 +69,9 @@ namespace SpartaDungeon
         }
         public void showCharacterInfo()
         {
-            int a = getAttack();
+            int a = Attack;
             if (a < 0) a = 0;
-            int d = getDefense();
+            int d = Defense;
             if (d < 0) d = 0;
 
             while (true)
@@ -130,12 +125,12 @@ namespace SpartaDungeon
         }
 
     }
-    class Inventory
+    public class Inventory
     {
         int command;
         bool isFirst = true;
-        //소지 중인 아이템을 저장할 List
         List<Item> items;
+        //소지 중인 아이템을 저장할 List
         public List<Item> invenItems = new List<Item>();
 
         Character character;
@@ -227,45 +222,35 @@ namespace SpartaDungeon
                             if (item.getType() == ItemType.Weapon)
                             {
                                 //현재 캐릭터가 무기를 장착한 상태라면, 
-                                if (character.getItemWeapon() !=null)
+                                if (character.Weapon !=null)
                                 {
                                     //이전에 장착한 아이템에 대한 정보를 불러와 장착 상태를 해제
-                                    Item preItem = character.getItemWeapon();
+                                    Item preItem = character.Weapon;
                                     preItem.setItemEquip();
 
                                     int attack = (-1 * preItem.getPlusAttack());
                                     int denfense = (-1 * preItem.getPlusDefense());
                                     character.setItemState(attack, denfense);
+                                }
 
-                                    //현재 아이템을 장착중인 아이템으로 등록
-                                    character.setItemWeapon(item);
-                                }
-                                //장착한 상태가 아닐 경우 현재 아이템을 장착중인 아이템으로 등록
-                                else
-                                {
-                                    character.setItemWeapon(item);
-                                }
+                                //현재 아이템을 장착중인 아이템으로 등록
+                                character.Weapon = item;
 
                             }
                             //장착하려는 아이템의 유형이 방어구일 때,
                             if(item.getType() == ItemType.Armor)
                             {
                                 
-                                if (character.getItemArmor() != null)
+                                if (character.Armor != null)
                                 {
-                                    Item preItem = character.getItemArmor();
+                                    Item preItem = character.Armor;
                                     preItem.setItemEquip();
 
                                     int attack = (-1 * preItem.getPlusAttack());
                                     int denfense = (-1 * preItem.getPlusDefense());
                                     character.setItemState(attack, denfense);
-
-                                    character.setItemArmor(item);
                                 }
-                                else
-                                {
-                                    character.setItemArmor(item);
-                                }
+                                character.Armor = item;
                             }
 
                             //아이템의 능력치만큼 캐릭터의 공격력이나 방어력에 가산 연산
@@ -276,9 +261,9 @@ namespace SpartaDungeon
                         {
                             //장착을 해제할 때 아이템의 타입에 따라 무기/방어구 정보를 null로 바꾸어줌
                             if (item.getType() == ItemType.Weapon)
-                                character.setItemWeapon(null);
+                                character.Weapon = null;
                             if (item.getType() == ItemType.Armor)
-                                character.setItemArmor(null);
+                                character.Armor = null;
 
                             //원래의 스텟에 -1을 곱한 결과로 가산 연산을 진행하므로 결과적으로 값이 줄어듬.
                             int attack = (-1 * item.getPlusAttack());
@@ -290,7 +275,7 @@ namespace SpartaDungeon
             }
         }
     }
-    class Shop
+    public class Shop
     {
         int command;
         Character character;
@@ -506,7 +491,7 @@ namespace SpartaDungeon
             state = -1;
         }
     }
-    class Dungeon
+    public class Dungeon
     {
         Character character;
 
@@ -553,7 +538,7 @@ namespace SpartaDungeon
             bool isClear = true;
 
             //권장 방어력보다 낮을 경우,
-            if (character.getDefense() < setDefenseHard[idx-1])
+            if (character.Defense < setDefenseHard[idx-1])
             {
                 //num에는 0부터 9까지의 숫자가 랜덤으로 저장.
                 int rnd = new Random().Next(0, 10);
@@ -573,21 +558,21 @@ namespace SpartaDungeon
 
                 Program.showColorYellow("[탐험 결과]\n");
 
-                int minusHp = setDefenseHard[idx-1] - character.getDefense();
+                int minusHp = setDefenseHard[idx-1] - character.Defense;
                 int rnd = new Random().Next((20 + minusHp), (35 + minusHp));
 
-                int hp = character.getHP() - rnd;
+                int hp = character.HP - rnd;
 
                 //공격력 ~ 공격력*2% 만큼의 추가 보상
-                rnd = new Random().Next(character.getAttack(), 2 * character.getAttack());
+                rnd = new Random().Next(character.Attack, 2 * character.Attack);
 
                 //클리어 기본 보상 + 클리어 기본 보상의 (공격력 ~ 공격력x2) % 만큼의 추가 보상
                 int Gold = reward[idx - 1] + reward[idx - 1] * rnd / 100;
                 
-                Console.Write($"체력 {character.getHP()} ");
+                Console.Write($"체력 {character.HP} ");
                 Program.showColorYellow("→ ");
-                character.setHP(hp);
-                Console.WriteLine($"{character.getHP()}\n");
+                character.HP = hp;
+                Console.WriteLine($"{character.HP}\n");
 
                 Console.Write($"Gold {character.Gold} ");
                 character.setGold(-1 * Gold);
@@ -596,48 +581,48 @@ namespace SpartaDungeon
 
                 clearCnt++;
 
-                if(character.getCurrentLevel() == clearCnt)
+                if (character.Level == clearCnt)
                 {
                     clearCnt = 0;
                     Program.showColorGreen("!!레벨업을 축하드립니다!!\n");
 
                     Program.showColorYellow("[Level UP!]\n");
-                    Console.WriteLine($"{character.getCurrentLevel()}LV → {character.getCurrentLevel() + 1}LV\n");
-                    character.levelUP();
+                    Console.WriteLine($"{character.Level}LV → {character.Level + 1}LV\n");
+                    character.Level = 1;
 
                     //기본 공격력은 0.5, 방어력은 1 증가
                     Program.showColorYellow("[공격력] ");
-                    Console.Write($"\n{character.getAttack()} → ");
-                    int num = (int)(character.getAttack() * 0.5); //현재 공격력의 50%
-                    character.setAttack(num);
-                    Console.WriteLine($"{character.getAttack()}\n");
+                    Console.Write($"\n{character.Attack} → ");
+                    int num = (int)(character.Attack * 0.5); //현재 공격력의 50%
+                    character.Attack = num;
+                    Console.WriteLine($"{character.Attack}\n");
 
                     Program.showColorYellow("[방어력] ");
-                    Console.Write($"\n{character.getDefense()} → ");
-                    num = (int)(character.getDefense() * 0.3); //현재 방어력의 30%
-                    character.setDefense(num);
-                    Console.WriteLine($"{character.getDefense()}\n");
+                    Console.Write($"\n{character.Defense} → ");
+                    num = (int)(character.Defense * 0.3); //현재 방어력의 30%
+                    character.Defense = num;
+                    Console.WriteLine($"{character.Defense}\n");
                 }
             }
             else
             {
-                int hp = character.getHP() / 2;
+                int hp = character.HP / 2;
 
                 Program.showColorRed("< 던전 공략 실패 >\n");
                 Console.WriteLine($"{DungeonName[idx-1]}을 클리어하지 못했습니다.\n");
 
                 Program.showColorYellow("[탐험 결과]\n");
-                Console.Write($"체력 {character.getHP()} ");
+                Console.Write($"체력 {character.HP} ");
                 Program.showColorYellow("→ ");
                 Console.WriteLine($"{hp}\n");
 
-                character.setHP(hp);
+                character.HP = hp;
             }
             command = Program.CheckCommandVaild(0, 0);
             if (command == 0) return;
         }
     }
-    class Item
+    public class Item
     {
         string name, description;
 
@@ -737,7 +722,7 @@ namespace SpartaDungeon
                 Console.WriteLine("G)\n");
 
                 Program.showColorYellow("[현재 체력] - ");
-                Console.WriteLine($"(100/{character.getHP()})\n");
+                Console.WriteLine($"(100/{character.HP})\n");
 
                 Program.showColorYellow("1. ");
                 Console.WriteLine("휴식하기");
@@ -756,10 +741,10 @@ namespace SpartaDungeon
             Console.WriteLine("휴식을 마쳤습니다! 힘이 솟아나는 기분입니다.\n");
 
             Program.showColorYellow("[탐험 결과]\n");
-            Console.Write($"체력 {character.getHP()} ");
+            Console.Write($"체력 {character.HP} ");
             Program.showColorYellow("→ ");
-            character.setHP(100);
-            Console.WriteLine($"{character.getHP()}\n");
+            character.HP = 100;
+            Console.WriteLine($"{character.HP}\n");
 
             command = Program.CheckCommandVaild(0, 0);
             if (command == 0) return;
@@ -769,15 +754,18 @@ namespace SpartaDungeon
     {
         static void Main(string[] args)
         {
+            
             List<Item> items = new List<Item>();
             setItemList(items);
 
-            Character player = new Character("홍길동", 1, "전사", 10, 5, 100, 11500);
-
+            Character player = new Character("홍길동", 1, "전사", 10, 5, 100, 1500);
             Inventory inventory = new Inventory(items, player);
-            Shop shop = new Shop(player, items, inventory);
             Dungeon dungeon = new Dungeon(player);
+
+
+            Shop shop = new Shop(player, items, inventory);
             Break takeBreak = new Break(player);
+
 
             int? command = null;
 
@@ -820,6 +808,7 @@ namespace SpartaDungeon
                         break;
                 }
             }
+
         }
 
         static void showMenu()
