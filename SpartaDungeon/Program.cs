@@ -1,8 +1,11 @@
-﻿using System;
+﻿
+
+using Newtonsoft.Json;
+using System;
+using System.IO;
+using System.Numerics;
 namespace SpartaDungeon
 {
-    
-
     public enum SHOPPING
     {
         Success, //구매 성공! → 정수형으로 변환하면 0
@@ -28,11 +31,13 @@ namespace SpartaDungeon
         //이름, 전직
         string name, job;
 
+        int clearCNT = 0;
+
         //방어구, 무기에 대한 장착 정보를 저장할 변수
         Item? itemWeapon, itemArmor;
 
         int itemAttack = 0, itemDefense = 0;
-
+        public Character() { }
         public Character(string name, int level, string job,
             int attack, int defense, int hp, int gold)
         {
@@ -45,13 +50,16 @@ namespace SpartaDungeon
             this.gold = gold;
         }
 
+        public int ItemAttack { get { return itemAttack; } set { itemAttack = value; } }
+        public int ItemDefense { get { return itemDefense; } set { itemDefense = value; } }
         public int Level { get { return level; } set { level += value; } }
         public int HP { get { if (hp < 0) hp = 0; return hp; } set { hp = value; } }
         public int Attack { get { return attack; } set { attack += value; } }
         public int Defense{ get { return defense; } set { defense += value; } }
-        public int Gold { get { return gold; } }
-        public string Name { get { return name; } }
-        public string Job { get { return job; } }
+        public int Gold { get { return gold; } set { gold = value; } }
+        public string Name { get { return name; }set { name = value; } }
+        public string Job { get { return job; } set { job = value; } }
+        public int ClearCNT { get { return clearCNT; } set { clearCNT = value; } }
         public Item Weapon { get { return itemWeapon; } set { itemWeapon = value; } }
         public Item Armor { get { return itemArmor; } set { itemArmor = value; } }
         public void setGold(int minus)
@@ -128,19 +136,18 @@ namespace SpartaDungeon
     public class Inventory
     {
         int command;
-        bool isFirst = true;
-        List<Item> items;
+        //List<Item> items;
         //소지 중인 아이템을 저장할 List
-        public List<Item> invenItems = new List<Item>();
-
+        private List<Item> invenItems = new List<Item>();
+        public List<Item>  InvenItems { get { return invenItems;  } set { invenItems = value; } }
         Character character;
-        public Inventory(List<Item> items, Character character)
+        public Inventory() { }
+        public Inventory(Character character)
         {
-            this.items = items;
+            //this.items = items;
             this.character = character;
         }
-        public void setListUpdate() { isFirst = true; }
-        
+
         public void showInventoryList(bool isSetting)
         {
 
@@ -148,7 +155,7 @@ namespace SpartaDungeon
 
             int idx = 1;
 
-            foreach (Item item in invenItems)
+            foreach (Item item in InvenItems)
             {
                 //장착 관리 페이지라면 숫자를 표시
                 if (isSetting)
@@ -176,6 +183,7 @@ namespace SpartaDungeon
                 {
                     Program.showColorRed("잘못된 입력입니다.\n"); ;
                 }
+
                 command = Program.CheckCommandVaild(0, 1);
 
                 if (command == 1)
@@ -204,22 +212,22 @@ namespace SpartaDungeon
                 {
                     Program.showColorRed("잘못된 입력입니다.\n"); ;
                 }
-                command = Program.CheckCommandVaild(0, invenItems.Count);
+                command = Program.CheckCommandVaild(0, InvenItems.Count);
 
                 if (command == 0) return;
 
-                foreach (Item item in invenItems)
+                foreach (Item item in InvenItems)
                 {
-                    if ((command - 1) == invenItems.IndexOf(item))
+                    if ((command - 1) == InvenItems.IndexOf(item))
                     {
                         item.setItemEquip();
 
                         //현재의 item.getItemEquip()의 값이 true라면 장착 X -> 장착 O 상태로 간 것.
-                        if (item.getItemEquip())
+                        if (item.IsEquipped)
                         {
 
                             //장착하려는 아이템의 유형이 무기일 때, 
-                            if (item.getType() == ItemType.Weapon)
+                            if (item.Type == ItemType.Weapon)
                             {
                                 //현재 캐릭터가 무기를 장착한 상태라면, 
                                 if (character.Weapon !=null)
@@ -228,8 +236,8 @@ namespace SpartaDungeon
                                     Item preItem = character.Weapon;
                                     preItem.setItemEquip();
 
-                                    int attack = (-1 * preItem.getPlusAttack());
-                                    int denfense = (-1 * preItem.getPlusDefense());
+                                    int attack = (-1 * preItem.PlusAttack);
+                                    int denfense = (-1 * preItem.PlusDefense);
                                     character.setItemState(attack, denfense);
                                 }
 
@@ -238,7 +246,7 @@ namespace SpartaDungeon
 
                             }
                             //장착하려는 아이템의 유형이 방어구일 때,
-                            if(item.getType() == ItemType.Armor)
+                            if(item.Type == ItemType.Armor)
                             {
                                 
                                 if (character.Armor != null)
@@ -246,28 +254,28 @@ namespace SpartaDungeon
                                     Item preItem = character.Armor;
                                     preItem.setItemEquip();
 
-                                    int attack = (-1 * preItem.getPlusAttack());
-                                    int denfense = (-1 * preItem.getPlusDefense());
+                                    int attack = (-1 * preItem.PlusAttack);
+                                    int denfense = (-1 * preItem.PlusDefense);
                                     character.setItemState(attack, denfense);
                                 }
                                 character.Armor = item;
                             }
 
                             //아이템의 능력치만큼 캐릭터의 공격력이나 방어력에 가산 연산
-                            character.setItemState(item.getPlusAttack(), item.getPlusDefense());
+                            character.setItemState(item.PlusAttack, item.PlusDefense);
                         }
                         //현재의 item.getItemEquip()의 값이 false라면 장착 O -> 장착 X 상태로 간 것.
                         else
                         {
                             //장착을 해제할 때 아이템의 타입에 따라 무기/방어구 정보를 null로 바꾸어줌
-                            if (item.getType() == ItemType.Weapon)
+                            if (item.Type == ItemType.Weapon)
                                 character.Weapon = null;
-                            if (item.getType() == ItemType.Armor)
+                            if (item.Type == ItemType.Armor)
                                 character.Armor = null;
 
                             //원래의 스텟에 -1을 곱한 결과로 가산 연산을 진행하므로 결과적으로 값이 줄어듬.
-                            int attack = (-1 * item.getPlusAttack());
-                            int denfense = (-1 * item.getPlusDefense());
+                            int attack = (-1 * item.PlusAttack);
+                            int denfense = (-1 * item.PlusDefense);
                             character.setItemState(attack , denfense);
                         }
                     }
@@ -378,19 +386,19 @@ namespace SpartaDungeon
                     if ((command - 1) == items.IndexOf(item))
                     {
                         //판매되지 않은 상태라면, 
-                        if (!item.getIsSoldOut())
+                        if (!item.IsSoldOut)
                         {
                             //소지하고 있는 금액이 아이템의 가격보다 많을 때, 
-                            if (character.Gold >= item.getPrice())
+                            if (character.Gold >= item.Price)
                             {
                                 //해당 아이템을 판매 완료 상태로 변경
                                 item.setSoldOut();
 
                                 //현재 소지금에서 아이템의 가격을 차감
-                                character.setGold(item.getPrice());
+                                character.setGold(item.Price);
                                 state = (int)SHOPPING.Success;
 
-                                inventory.invenItems.Add(item);
+                                inventory.InvenItems.Add(item);
                                 break;
                             }
                             //소지 금액이 가격보다 더 적은 경우, 
@@ -416,7 +424,6 @@ namespace SpartaDungeon
             while (true)
             {
                 Console.Clear();
-                Console.WriteLine(inventory.invenItems.Count);
                 Program.showColorRed("< 상점 - 아이템 판매 >\n");
                 Console.WriteLine("필요한 아이템을 얻을 수 있는 상점입니다.\n");
 
@@ -438,32 +445,32 @@ namespace SpartaDungeon
                     sellComplete = false;
                 }
 
-                command = Program.CheckCommandVaild(0, inventory.invenItems.Count);
+                command = Program.CheckCommandVaild(0, inventory.InvenItems.Count);
                 if (command == 0) return;
 
 
-                foreach (Item item in inventory.invenItems)
+                foreach (Item item in inventory.InvenItems)
                 {
-                    if ((command - 1) == inventory.invenItems.IndexOf(item))
+                    if ((command - 1) == inventory.InvenItems.IndexOf(item))
                     {
                         //선택한 아이템이 구매가 된 상태라면, 
-                        if (item.getIsSoldOut())
+                        if (item.IsSoldOut)
                         {
                             item.setSoldOut();
 
-                            int refund = (int)Math.Round(item.getPrice() * 0.85);
+                            int refund = (int)Math.Round(item.Price * 0.85);
                             character.setGold(-1 * refund);
 
-                            if (item.getItemEquip()) 
+                            if (item.IsEquipped) 
                             {
                                 item.setItemEquip();
 
-                                int attack = (-1 * item.getPlusAttack());
-                                int denfense = (-1 * item.getPlusDefense());
+                                int attack = (-1 * item.PlusAttack);
+                                int denfense = (-1 * item.PlusDefense);
                                 character.setItemState(attack, denfense);
                             }
 
-                            inventory.invenItems.Remove(item);
+                            inventory.InvenItems.Remove(item);
                             sellComplete = true;
                             break;
                         }
@@ -495,7 +502,7 @@ namespace SpartaDungeon
     {
         Character character;
 
-        int command, clearCnt = 0;
+        int command;
         int[] setDefenseHard = [5, 11, 17];
         string[] DungeonName = ["쉬운 던전", "일반 던전", "어려운 던전"];
         int[] reward = [1000, 1700, 2500];
@@ -523,9 +530,13 @@ namespace SpartaDungeon
                     Console.WriteLine(" 이상 권장");
                 }
 
+                if (command == (int)CommandValid.InValid)
+                {
+                    Program.showColorRed("잘못된 입력입니다.\n");
+                }
+
                 Console.WriteLine();
                 command = Program.CheckCommandVaild(0, 3);
-
                 if (command == 0) return;
 
                 CheckDungeonClear(command);
@@ -564,7 +575,7 @@ namespace SpartaDungeon
                 int hp = character.HP - rnd;
 
                 //공격력 ~ 공격력*2% 만큼의 추가 보상
-                rnd = new Random().Next(character.Attack, 2 * character.Attack);
+                rnd = new Random().Next(character.Attack , 2 * character.Attack);
 
                 //클리어 기본 보상 + 클리어 기본 보상의 (공격력 ~ 공격력x2) % 만큼의 추가 보상
                 int Gold = reward[idx - 1] + reward[idx - 1] * rnd / 100;
@@ -579,11 +590,11 @@ namespace SpartaDungeon
                 Program.showColorYellow("→ ");
                 Console.WriteLine($"{character.Gold}\n");
 
-                clearCnt++;
+                character.ClearCNT = character.ClearCNT + 1;
 
-                if (character.Level == clearCnt)
+                if (character.Level == character.ClearCNT)
                 {
-                    clearCnt = 0;
+                    character.ClearCNT = 0;
                     Program.showColorGreen("!!레벨업을 축하드립니다!!\n");
 
                     Program.showColorYellow("[Level UP!]\n");
@@ -638,18 +649,18 @@ namespace SpartaDungeon
         //구매 하였는지에 대한 여부를 저장하는 변수, 장비를 하였는지에 대한 여부를 저장하는 변수
         bool isSoldOut = false, isEquipped = false;
 
-        public int getPrice() { return price; }
+        public int Price { get { return price; } set { price = value; } }
+        public bool IsSoldOut { get { return isSoldOut; } set { isSoldOut = value; } }
+        public string Name { get { return name; } set { name = value; } }
+        public string Description { get { return description; } set { description = value; } }
+        public bool IsEquipped { get { return isEquipped; } set { isEquipped = value; } }
+        public int PlusAttack { get { return plusAttack; } set { PlusAttack = value; } }
+        public int PlusDefense { get { return plusDefense; } set { plusDefense = value; } }
+        public ItemType Type { get { return type; } set { Type = value; } }
 
-        public bool getIsSoldOut() { return isSoldOut; }
         public void setSoldOut() { isSoldOut = !isSoldOut; }
 
         public void setItemEquip() { isEquipped = !isEquipped; }
-        public bool getItemEquip() { return isEquipped; }
-
-        public int getPlusAttack() { return plusAttack; }
-        public int getPlusDefense() { return plusDefense; }
-
-        public ItemType getType() { return type; }
 
         public Item(string name, string description, int plusAttack,
             int plusDefense, int price, ItemType type)
@@ -729,6 +740,11 @@ namespace SpartaDungeon
                 Program.showColorYellow("0. ");
                 Console.WriteLine("나가기");
 
+                if (command == (int)CommandValid.InValid)
+                {
+                    Program.showColorRed("잘못된 입력입니다.\n");
+                }
+
                 command = Program.CheckCommandVaild(0, 1);
                 if (command == 0) return;
                 if (command == 1) takeBreak();
@@ -746,6 +762,10 @@ namespace SpartaDungeon
             character.HP = 100;
             Console.WriteLine($"{character.HP}\n");
 
+            if (command == (int)CommandValid.InValid)
+            {
+                Program.showColorRed("잘못된 입력입니다.\n");
+            }
             command = Program.CheckCommandVaild(0, 0);
             if (command == 0) return;
         }
@@ -754,18 +774,16 @@ namespace SpartaDungeon
     {
         static void Main(string[] args)
         {
-            
+            Character player = new Character();
             List<Item> items = new List<Item>();
-            setItemList(items);
+            Inventory inventory = new Inventory();
 
-            Character player = new Character("홍길동", 1, "전사", 10, 5, 100, 1500);
-            Inventory inventory = new Inventory(items, player);
+            LoadGameData(ref player, ref items, ref inventory);
+
             Dungeon dungeon = new Dungeon(player);
-
 
             Shop shop = new Shop(player, items, inventory);
             Break takeBreak = new Break(player);
-
 
             int? command = null;
 
@@ -782,12 +800,16 @@ namespace SpartaDungeon
                 {
                     showColorRed("잘못된 입력입니다.\n");
                 }
-                
+
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.Write("0번을 누르면 지금까지의 상태를 저장하고 종료합니다.\n");
+                Console.ResetColor();
+
                 command = CheckCommandVaild(0, 5);
                 
                 if (command == 0)
                 {
-                    Console.WriteLine("던전 게임을 종료합니다."); break;
+                    Console.WriteLine("\n던전 게임을 종료합니다."); break;
                 }
                 switch (command)
                 {
@@ -809,8 +831,69 @@ namespace SpartaDungeon
                 }
             }
 
-        }
+            //================== 데이터 저장하는 부분(플레이어, 아이템, 인벤토리 정보) ==================
+           
+            string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string filePath = Path.Combine(path, "saveFile.json");
+            string itemFilePath = Path.Combine(path, "saveItemFile.json");
+            string ivenFilePath = Path.Combine(path, "saveInvenFile.json");
 
+            var playerJson = JsonConvert.SerializeObject(player,Formatting.Indented);
+            var ItemJson = JsonConvert.SerializeObject(items, Formatting.Indented);
+            var InvenJson = JsonConvert.SerializeObject(inventory, Formatting.Indented);
+
+            File.WriteAllText(filePath, playerJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(itemFilePath, ItemJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(ivenFilePath, InvenJson, System.Text.Encoding.UTF8);
+
+            Console.WriteLine("저장이 완료되었습니다! ");
+        }
+        
+        //데이터 로드
+        static void LoadGameData(ref Character player, ref List<Item> items,ref Inventory inventory)
+        {
+            string playerFileName = "saveFile.json";
+            string itemFileName = "saveItemFile.json";
+            string invenFileName =  "saveInvenFile.json";
+
+            string userDocumentsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+            // 플레이어 데이터 로드
+            string playerFilePath = Path.Combine(userDocumentsFolder, playerFileName);
+            if (File.Exists(playerFilePath))
+            {
+                string playerJson = File.ReadAllText(playerFilePath, System.Text.Encoding.UTF8);
+                player = JsonConvert.DeserializeObject<Character>(playerJson);
+            }
+            else
+            {
+                player = new Character("홍길동", 1, "전사", 10, 5, 100, 1500);
+            }
+
+            // 아이템 데이터 로드
+            string itemFilePath = Path.Combine(userDocumentsFolder, itemFileName);
+            if (File.Exists(itemFilePath))
+            {
+                string itemJson = File.ReadAllText(itemFilePath, System.Text.Encoding.UTF8);
+                items = JsonConvert.DeserializeObject<List<Item>>(itemJson);
+            }
+            else
+            {
+                setItemList(items);
+            }
+
+            string invenFilePath = Path.Combine(userDocumentsFolder, invenFileName);
+            if(File.Exists(invenFilePath))
+            {
+                string invenJson = File.ReadAllText(invenFilePath, System.Text.Encoding.UTF8);
+                inventory = JsonConvert.DeserializeObject<Inventory>(invenJson);
+            }
+            else
+            {
+                inventory = new Inventory(player);
+                
+            }
+        }
         static void showMenu()
         {
             Console.WriteLine("1. 상태 보기");
